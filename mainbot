@@ -1,0 +1,757 @@
+import jordan_1
+# Sample Trading Bot for Kucoin; implements Kucoin API to launch trades based on 24 hr price change.
+# Bot iteratively increases the size of trades over time in increments of .01 (multiplied by the normalization unit) and splits trade profit between liquid asset and altcoin.
+# Full version available upon request. Full version enables user to customize the size and margin and set an end target for account balances. Also includes safeguards for cover positions that prevent coin balances from reaching zero (i.e. preventing the entire balance of a particular coin from suspension in a position)
+# Full version dispenses with variable initializations.
+
+
+
+from jordan_1 import *
+import datetime
+import time
+
+import variablecollection
+from variablecollection import convert_date_to_excel_ordinal
+from variablecollection import lead_value
+
+import pickle
+
+coin_name_list = ["KCS-USDT", "KCS-BTC", "XMR-USDT", "XMR-BTC", "ZEC-USDT", "ZEC-BTC", "XTZ-USDT", "XTZ-BTC",
+                  "FTM-USDT", "FTM-BTC", "BAT-USDT", "ENS-USDT"]
+
+noww = datetime.datetime.now()
+futuree = datetime.datetime(2022, 9, 30, 0, 10, 0) # Edit
+difff = futuree - noww
+#print(difff.total_seconds())
+
+
+while difff.total_seconds() > 2:
+
+    noww = datetime.datetime.now()
+    difff = futuree - noww
+
+    currentDay = datetime.datetime.now().day
+    currentMonth = datetime.datetime.now().month
+    currentYear = datetime.datetime.now().year
+
+    coin_name_list = ["KCS-USDT", "KCS-BTC", "XMR-USDT", "XMR-BTC", "ZEC-USDT", "ZEC-BTC", "XTZ-USDT", "XTZ-BTC",
+                      "FTM-USDT", "FTM-BTC", "BAT-USDT", "ENS-USDT"]
+
+    price_change_list = [0 for j in range(len(coin_name_list))]
+    j = 0
+    price_changes = []
+    prices = [0 for q in range(len(coin_name_list))]
+
+
+
+    name_index = [0 for w in range(len(coin_name_list))]
+    number_of_coins = [0 for r in range(len(coin_name_list))]
+
+    todays_date = convert_date_to_excel_ordinal(currentDay, currentMonth, currentYear) - 44797
+
+    if (noww.minute == 1 and noww.second == 0) or (noww.minute == 15 and noww.second == 0) or (noww.minute == 30 and
+                                                                                                noww.second == 0)or (noww.minute == 42 and
+                                                                                                noww.second == 0):
+        time.sleep(2)
+        price_truncation_factor = [3, 6, 2, 6, 3, 6, 5, 7, 5, 8, 4, 3]
+        amount_truncation_factor = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        kcs_short_counter = pickle.load(open("kcs_short_counter.dat", "rb"))
+        kcs_btc_short_counter = pickle.load(open("kcs_btc_short_counter.dat", "rb"))
+        xmr_short_counter = pickle.load(open("xmr_short_counter.dat", "rb"))
+        xmr_btc_short_counter = pickle.load(open("xmr_btc_short_counter.dat", "rb"))
+        zec_short_counter = pickle.load(open("zec_short_counter.dat", "rb"))
+        zec_btc_short_counter = pickle.load(open("zec_btc_short_counter.dat", "rb"))
+        xtz_short_counter = pickle.load(open("xtz_short_counter.dat", "rb"))
+        xtz_btc_short_counter = pickle.load(open("xtz_btc_short_counter.dat", "rb"))
+        ftm_short_counter = pickle.load(open("ftm_short_counter.dat", "rb"))
+        ftm_btc_short_counter = pickle.load(open("ftm_btc_short_counter.dat", "rb"))
+        bat_short_counter = pickle.load(open("bat_short_counter.dat", "rb"))
+        ens_short_counter = pickle.load(open("ens_short_counter.dat", "rb"))
+
+        master_short_counter = pickle.load(open("master_short_counter.dat", "rb"))
+
+        kcs_ghost_counter = pickle.load(open("kcs_ghost_counter.dat", "rb"))
+        kcs_btc_ghost_counter = pickle.load(open("kcs_btc_ghost_counter.dat", "rb"))
+        xmr_ghost_counter = pickle.load(open("xmr_ghost_counter.dat", "rb"))
+        xmr_btc_ghost_counter = pickle.load(open("xmr_btc_ghost_counter.dat", "rb"))
+        zec_ghost_counter = pickle.load(open("zec_ghost_counter.dat", "rb"))
+        zec_btc_ghost_counter = pickle.load(open("zec_btc_ghost_counter.dat", "rb"))
+        xtz_ghost_counter = pickle.load(open("xtz_ghost_counter.dat", "rb"))
+        xtz_btc_ghost_counter = pickle.load(open("xtz_btc_ghost_counter.dat", "rb"))
+        ftm_ghost_counter = pickle.load(open("ftm_ghost_counter.dat", "rb"))
+        ftm_btc_ghost_counter = pickle.load(open("ftm_btc_ghost_counter.dat", "rb"))
+        bat_ghost_counter = pickle.load(open("bat_ghost_counter.dat", "rb"))
+        ens_ghost_counter = pickle.load(open("ens_ghost_counter.dat", "rb"))
+
+        master_ghost_counter = pickle.load(open("master_ghost_counter.dat", "rb"))
+
+        kcs_long_counter = pickle.load(open("kcs_long_counter.dat", "rb"))
+        kcs_btc_long_counter = pickle.load(open("kcs_btc_long_counter.dat", "rb"))
+        xmr_long_counter = pickle.load(open("xmr_long_counter.dat", "rb"))
+        xmr_btc_long_counter = pickle.load(open("xmr_btc_long_counter.dat", "rb"))
+        zec_long_counter = pickle.load(open("zec_long_counter.dat", "rb"))
+        zec_btc_long_counter = pickle.load(open("zec_btc_long_counter.dat", "rb"))
+        xtz_long_counter = pickle.load(open("xtz_long_counter.dat", "rb"))
+        xtz_btc_long_counter = pickle.load(open("xtz_btc_long_counter.dat", "rb"))
+        ftm_long_counter = pickle.load(open("ftm_long_counter.dat", "rb"))
+        ftm_btc_long_counter = pickle.load(open("ftm_btc_long_counter.dat", "rb"))
+        bat_long_counter = pickle.load(open("bat_long_counter.dat", "rb"))
+        ens_long_counter = pickle.load(open("ens_long_counter.dat", "rb"))
+
+        master_long_counter = pickle.load(open("master_long_counter.dat", "rb"))
+
+        kcs_ghost_counter_long = pickle.load(open("kcs_ghost_counter_long.dat", "rb"))
+        kcs_btc_ghost_counter_long = pickle.load(open("kcs_btc_ghost_counter_long.dat", "rb"))
+        xmr_ghost_counter_long = pickle.load(open("xmr_ghost_counter_long.dat", "rb"))
+        xmr_btc_ghost_counter_long = pickle.load(open("xmr_btc_ghost_counter_long.dat", "rb"))
+        zec_ghost_counter_long = pickle.load(open("zec_ghost_counter_long.dat", "rb"))
+        zec_btc_ghost_counter_long = pickle.load(open("zec_btc_ghost_counter_long.dat", "rb"))
+        xtz_ghost_counter_long = pickle.load(open("xtz_ghost_counter_long.dat", "rb"))
+        xtz_btc_ghost_counter_long = pickle.load(open("xtz_btc_ghost_counter_long.dat", "rb"))
+        ftm_ghost_counter_long = pickle.load(open("ftm_ghost_counter_long.dat", "rb"))
+        ftm_btc_ghost_counter_long = pickle.load(open("ftm_btc_ghost_counter_long.dat", "rb"))
+        bat_ghost_counter_long = pickle.load(open("bat_ghost_counter_long.dat", "rb"))
+        ens_ghost_counter_long = pickle.load(open("ens_ghost_counter_long.dat", "rb"))
+
+        master_ghost_counter_long = pickle.load(open("master_ghost_counter_long.dat", "rb"))
+
+        kcs_ledger_change = pickle.load(open("kcs_ledger_change.dat", "rb"))
+        kcs_btc_ledger_change = pickle.load(open("kcs_btc_ledger_change.dat", "rb"))
+        xmr_ledger_change = pickle.load(open("xmr_ledger_change.dat", "rb"))
+        xmr_btc_ledger_change = pickle.load(open("xmr_btc_ledger_change.dat", "rb"))
+        zec_ledger_change = pickle.load(open("zec_ledger_change.dat", "rb"))
+        zec_btc_ledger_change = pickle.load(open("zec_btc_ledger_change.dat", "rb"))
+        xtz_ledger_change = pickle.load(open("xtz_ledger_change.dat", "rb"))
+        xtz_btc_ledger_change = pickle.load(open("xtz_btc_ledger_change.dat", "rb"))
+        ftm_ledger_change = pickle.load(open("ftm_ledger_change.dat", "rb"))
+        ftm_btc_ledger_change = pickle.load(open("ftm_btc_ledger_change.dat", "rb"))
+        bat_ledger_change = pickle.load(open("bat_ledger_change.dat", "rb"))
+        ens_ledger_change = pickle.load(open("ens_ledger_change.dat", "rb"))
+
+        master_ledger_change = pickle.load(open("master_ledger_change.dat", "rb"))
+
+        kcs_ledger_change_long = pickle.load(open("kcs_ledger_change_long.dat", "rb"))
+        kcs_btc_ledger_change_long = pickle.load(open("kcs_btc_ledger_change_long.dat", "rb"))
+        xmr_ledger_change_long = pickle.load(open("xmr_ledger_change_long.dat", "rb"))
+        xmr_btc_ledger_change_long = pickle.load(open("xmr_btc_ledger_change_long.dat", "rb"))
+        zec_ledger_change_long = pickle.load(open("zec_ledger_change_long.dat", "rb"))
+        zec_btc_ledger_change_long = pickle.load(open("zec_btc_ledger_change_long.dat", "rb"))
+        xtz_ledger_change_long = pickle.load(open("xtz_ledger_change_long.dat", "rb"))
+        xtz_btc_ledger_change_long = pickle.load(open("xtz_btc_ledger_change_long.dat", "rb"))
+        ftm_ledger_change_long = pickle.load(open("ftm_ledger_change_long.dat", "rb"))
+        ftm_btc_ledger_change_long = pickle.load(open("ftm_btc_ledger_change_long.dat", "rb"))
+        bat_ledger_change_long = pickle.load(open("bat_ledger_change_long.dat", "rb"))
+        ens_ledger_change_long = pickle.load(open("ens_ledger_change_long.dat", "rb"))
+
+        master_ledger_change_long = pickle.load(open("master_ledger_change_long.dat", "rb"))
+
+        supreme_counter = pickle.load(open("supreme_counter.dat", "rb"))
+        supreme_counter_long = pickle.load(open("supreme_counter_long.dat", "rb"))
+
+        kcs_cover_counter = pickle.load(open("kcs_cover_counter.dat", "rb"))
+        kcs_btc_cover_counter = pickle.load(open("kcs_btc_cover_counter.dat", "rb"))
+        xmr_cover_counter = pickle.load(open("xmr_cover_counter.dat", "rb"))
+        xmr_btc_cover_counter = pickle.load(open("xmr_btc_cover_counter.dat", "rb"))
+        zec_cover_counter = pickle.load(open("zec_cover_counter.dat", "rb"))
+        zec_btc_cover_counter = pickle.load(open("zec_btc_cover_counter.dat", "rb"))
+        xtz_cover_counter = pickle.load(open("xtz_cover_counter.dat", "rb"))
+        xtz_btc_cover_counter = pickle.load(open("xtz_btc_cover_counter.dat", "rb"))
+        ftm_cover_counter = pickle.load(open("ftm_cover_counter.dat", "rb"))
+        ftm_btc_cover_counter = pickle.load(open("ftm_btc_cover_counter.dat", "rb"))
+        bat_cover_counter = pickle.load(open("bat_cover_counter.dat", "rb"))
+        ens_cover_counter = pickle.load(open("ens_cover_counter.dat", "rb"))
+
+        cover_short_counter = pickle.load(open("cover_short_counter.dat", "rb"))
+
+        kcs_cover_counter_long = pickle.load(open("kcs_cover_counter_long.dat", "rb"))
+        kcs_btc_cover_counter_long = pickle.load(open("kcs_btc_cover_counter_long.dat", "rb"))
+        xmr_cover_counter_long = pickle.load(open("xmr_cover_counter_long.dat", "rb"))
+        xmr_btc_cover_counter_long = pickle.load(open("xmr_btc_cover_counter_long.dat", "rb"))
+        zec_cover_counter_long = pickle.load(open("zec_cover_counter_long.dat", "rb"))
+        zec_btc_cover_counter_long = pickle.load(open("zec_btc_cover_counter_long.dat", "rb"))
+        xtz_cover_counter_long = pickle.load(open("xtz_cover_counter_long.dat", "rb"))
+        xtz_btc_cover_counter_long = pickle.load(open("xtz_btc_cover_counter_long.dat", "rb"))
+        ftm_cover_counter_long = pickle.load(open("ftm_cover_counter_long.dat", "rb"))
+        ftm_btc_cover_counter_long = pickle.load(open("ftm_btc_cover_counter_long.dat", "rb"))
+        bat_cover_counter_long = pickle.load(open("bat_cover_counter_long.dat", "rb"))
+        ens_cover_counter_long = pickle.load(open("ens_cover_counter_long.dat", "rb"))
+
+        cover_long_counter = pickle.load(open("cover_long_counter.dat", "rb"))
+
+        market_cover_check = pickle.load(open("market_cover_check.dat", "rb"))
+        market_amount_check = pickle.load(open("market_amount_check.dat", "rb"))
+        market_cover_check_long = pickle.load(open("market_cover_check_long.dat", "rb"))
+        market_amount_check_long = pickle.load(open("market_amount_check_long.dat", "rb"))
+
+        amount_to_short = [0 for k in range(12)]
+        amount_to_long = [0 for k in range(12)]
+        margin_price = [0 for i in range(12)]
+        clientidd = str()
+        clientidd2 = str()
+
+        for c in range(len(coin_name_list)):
+            prices[c] = float(get_current_price(coin_name_list[c])[1])
+            price_change_list[c] = get_current_price_change(coin_name_list[c])
+            if price_change_list[c] > .034 or price_change_list[c] < -.035:
+                price_changes.append(price_change_list[c])
+                name_index[j] = c
+                j = j + 1
+        for r in range(len(price_changes)):
+            if price_changes[r] <= .04 and price_changes[r] >= 0.0 and master_short_counter[name_index[r]][todays_date] < 3:
+                master_short_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                master_ghost_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter[name_index[r]]:(supreme_counter[name_index[r]] + 2)])
+                supreme_counter[name_index[r]] = supreme_counter[name_index[r]] + 1
+                amount_to_short[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * .98, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "sell", coin_name_list[name_index[r]], amount_to_short[r])
+                place_limit_order(clientidd2, "buy", coin_name_list[name_index[r]], truncate(1.009 * amount_to_short[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date] - 1] = \
+                margin_price[r]
+            elif price_changes[r] <= .05 and price_changes[r] > .04 and master_short_counter[name_index[r]][
+                todays_date] < 8:
+                master_short_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 3
+                master_ghost_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter[name_index[r]]:(supreme_counter[name_index[r]] + 4)])
+                supreme_counter[name_index[r]] = supreme_counter[name_index[r]] + 3
+                amount_to_short[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * .98, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "sell", coin_name_list[name_index[r]], amount_to_short[r])
+                place_limit_order(clientidd2, "buy", coin_name_list[name_index[r]], truncate(1.009 * amount_to_short[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date] - 1] = \
+                margin_price[r]
+            elif price_changes[r] <= .07 and price_changes[r] > .05 and master_short_counter[name_index[r]][
+                todays_date] < 13:
+                master_short_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 9
+                master_ghost_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter[name_index[r]]:(supreme_counter[name_index[r]] + 6)])
+                supreme_counter[name_index[r]] = supreme_counter[name_index[r]] + 5
+                amount_to_short[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * .974, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "sell", coin_name_list[name_index[r]], amount_to_short[r])
+                place_limit_order(clientidd2, "buy", coin_name_list[name_index[r]], truncate(1.011 * amount_to_short[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date] - 1] = \
+                margin_price[r]
+            elif price_changes[r] <= .09 and price_changes[r] > .07 and master_short_counter[name_index[r]][todays_date] < 19:
+                master_short_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 14
+                master_ghost_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter[name_index[r]]:(supreme_counter[name_index[r]] + 8)])
+                supreme_counter[name_index[r]] = supreme_counter[name_index[r]] + 7
+                amount_to_short[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * .974, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "sell", coin_name_list[name_index[r]], amount_to_short[r])
+                place_limit_order(clientidd2, "buy", coin_name_list[name_index[r]], truncate(1.013 * amount_to_short[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date] - 1] = \
+                margin_price[r]
+            elif price_changes[r] > .09 and master_short_counter[name_index[r]][todays_date] < 29:
+                master_short_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 20
+                master_ghost_counter[name_index[r]][todays_date] = master_ghost_counter[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter[name_index[r]]:(supreme_counter[name_index[r]] + 9)])
+                supreme_counter[name_index[r]] = supreme_counter[name_index[r]] + 8
+                amount_to_short[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * .97, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "sell", coin_name_list[name_index[r]], amount_to_short[r])
+                place_limit_order(clientidd2, "buy", coin_name_list[name_index[r]], truncate(1.015 * amount_to_short[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change[name_index[r]][todays_date][2 * master_ghost_counter[name_index[r]][todays_date] - 1] = \
+                margin_price[r]
+            elif price_changes[r] >= -.04 and price_changes[r] < 0.0 and master_long_counter[name_index[r]][todays_date] < 3:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                      todays_date] + 1
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                            todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 2)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 1
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.017, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.993 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = margin_price[r]
+            elif price_changes[r] >= -.05 and price_changes[r] < -.04 and master_long_counter[name_index[r]][
+                todays_date] < 8:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                      todays_date] + 3
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                            todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 4)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 3
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.02, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.99 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = margin_price[r]
+            elif price_changes[r] >= -.07 and price_changes[r] < -.05 and master_long_counter[name_index[r]][
+                todays_date] < 13:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                      todays_date] + 8
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                            todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 6)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 5
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.02, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.99 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = margin_price[r]
+            elif price_changes[r] >= -.09 and price_changes[r] < -.07 and master_long_counter[name_index[r]][
+                todays_date] < 19:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                      todays_date] + 13
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][
+                                                                            todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(
+                    lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 6)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 5
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.02, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.99 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = margin_price[r]
+            elif price_changes[r] >= -.11 and price_changes[r] < -.09 and master_long_counter[name_index[r]][
+                todays_date] < 24:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][todays_date] + 19
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 8)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 7
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.02, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.99 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = margin_price[r]
+            elif price_changes[r] < -.11 and master_long_counter[name_index[r]][todays_date] < 29:
+                master_long_counter[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][todays_date] + 24
+                master_ghost_counter_long[name_index[r]][todays_date] = master_ghost_counter_long[name_index[r]][todays_date] + 1
+                if (name_index[r] % 2) == 0 or name_index[r] == 11:
+                    normalization_unit = .18 / prices[name_index[r]]
+                else:
+                    normalization_unit = 0.00000650 / prices[name_index[r]]
+                number_of_coins[r] = sum(lead_value[supreme_counter_long[name_index[r]]:(supreme_counter_long[name_index[r]] + 9)])
+                supreme_counter_long[name_index[r]] = supreme_counter_long[name_index[r]] + 8
+                amount_to_long[r] = truncate(normalization_unit * number_of_coins[r], amount_truncation_factor[name_index[r]])
+                margin_price[r] = truncate(prices[name_index[r]] * 1.02, price_truncation_factor[name_index[r]])
+                clientidd = str(todays_date) + 'b' + str(master_ghost_counter_long[name_index[r]][todays_date]) + 'b' + str(name_index[r])
+                clientidd2 = 'b' + clientidd
+                place_market_order(clientidd, "buy", coin_name_list[name_index[r]], amount_to_long[r])
+                place_limit_order(clientidd2, "sell", coin_name_list[name_index[r]], truncate(.99 * amount_to_long[r], amount_truncation_factor[name_index[r]]), margin_price[r])
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date]] = clientidd2
+                master_ledger_change_long[name_index[r]][todays_date][
+                    2 * master_ghost_counter_long[name_index[r]][todays_date] - 1] = \
+                    margin_price[r]
+
+
+        pickle.dump(kcs_short_counter, open("kcs_short_counter.dat", "wb"))
+        pickle.dump(kcs_btc_short_counter, open("kcs_btc_short_counter.dat", "wb"))
+        pickle.dump(xmr_short_counter, open("xmr_short_counter.dat", "wb"))
+        pickle.dump(xmr_btc_short_counter, open("xmr_btc_short_counter.dat", "wb"))
+        pickle.dump(zec_short_counter, open("zec_short_counter.dat", "wb"))
+        pickle.dump(zec_btc_short_counter, open("zec_btc_short_counter.dat", "wb"))
+        pickle.dump(xtz_short_counter, open("xtz_short_counter.dat", "wb"))
+        pickle.dump(xtz_btc_short_counter, open("xtz_btc_short_counter.dat", "wb"))
+        pickle.dump(ftm_short_counter, open("ftm_short_counter.dat", "wb"))
+        pickle.dump(ftm_btc_short_counter, open("ftm_btc_short_counter.dat", "wb"))
+        pickle.dump(bat_short_counter, open("bat_short_counter.dat", "wb"))
+        pickle.dump(ens_short_counter, open("ens_short_counter.dat", "wb"))
+
+        pickle.dump(master_short_counter, open("master_short_counter.dat", "wb"))
+
+        pickle.dump(kcs_ghost_counter, open("kcs_ghost_counter.dat", "wb"))
+        pickle.dump(kcs_btc_ghost_counter, open("kcs_btc_ghost_counter.dat", "wb"))
+        pickle.dump(xmr_ghost_counter, open("xmr_ghost_counter.dat", "wb"))
+        pickle.dump(xmr_btc_ghost_counter, open("xmr_btc_ghost_counter.dat", "wb"))
+        pickle.dump(zec_ghost_counter, open("zec_ghost_counter.dat", "wb"))
+        pickle.dump(zec_btc_ghost_counter, open("zec_btc_ghost_counter.dat", "wb"))
+        pickle.dump(xtz_ghost_counter, open("xtz_ghost_counter.dat", "wb"))
+        pickle.dump(xtz_btc_ghost_counter, open("xtz_btc_ghost_counter.dat", "wb"))
+        pickle.dump(ftm_ghost_counter, open("ftm_ghost_counter.dat", "wb"))
+        pickle.dump(ftm_btc_ghost_counter, open("ftm_btc_ghost_counter.dat", "wb"))
+        pickle.dump(bat_ghost_counter, open("bat_ghost_counter.dat", "wb"))
+        pickle.dump(ens_ghost_counter, open("ens_ghost_counter.dat", "wb"))
+
+        pickle.dump(master_ghost_counter, open("master_ghost_counter.dat", "wb"))
+
+        pickle.dump(kcs_long_counter, open("kcs_long_counter.dat", "wb"))
+        pickle.dump(kcs_btc_long_counter, open("kcs_btc_long_counter.dat", "wb"))
+        pickle.dump(xmr_long_counter, open("xmr_long_counter.dat", "wb"))
+        pickle.dump(xmr_btc_long_counter, open("xmr_btc_long_counter.dat", "wb"))
+        pickle.dump(zec_long_counter, open("zec_long_counter.dat", "wb"))
+        pickle.dump(zec_btc_long_counter, open("zec_btc_long_counter.dat", "wb"))
+        pickle.dump(xtz_long_counter, open("xtz_long_counter.dat", "wb"))
+        pickle.dump(xtz_btc_long_counter, open("xtz_btc_long_counter.dat", "wb"))
+        pickle.dump(ftm_long_counter, open("ftm_long_counter.dat", "wb"))
+        pickle.dump(ftm_btc_long_counter, open("ftm_btc_long_counter.dat", "wb"))
+        pickle.dump(bat_long_counter, open("bat_long_counter.dat", "wb"))
+        pickle.dump(ens_long_counter, open("ens_long_counter.dat", "wb"))
+
+        pickle.dump(master_long_counter, open("master_long_counter.dat", "wb"))
+
+        pickle.dump(kcs_ghost_counter_long, open("kcs_ghost_counter_long.dat", "wb"))
+        pickle.dump(kcs_btc_ghost_counter_long, open("kcs_btc_ghost_counter_long.dat", "wb"))
+        pickle.dump(xmr_ghost_counter_long, open("xmr_ghost_counter_long.dat", "wb"))
+        pickle.dump(xmr_btc_ghost_counter_long, open("xmr_btc_ghost_counter_long.dat", "wb"))
+        pickle.dump(zec_ghost_counter_long, open("zec_ghost_counter_long.dat", "wb"))
+        pickle.dump(zec_btc_ghost_counter_long, open("zec_btc_ghost_counter_long.dat", "wb"))
+        pickle.dump(xtz_ghost_counter_long, open("xtz_ghost_counter_long.dat", "wb"))
+        pickle.dump(xtz_btc_ghost_counter_long, open("xtz_btc_ghost_counter_long.dat", "wb"))
+        pickle.dump(ftm_ghost_counter_long, open("ftm_ghost_counter_long.dat", "wb"))
+        pickle.dump(ftm_btc_ghost_counter_long, open("ftm_btc_ghost_counter_long.dat", "wb"))
+        pickle.dump(bat_ghost_counter_long, open("bat_ghost_counter_long.dat", "wb"))
+        pickle.dump(ens_ghost_counter_long, open("ens_ghost_counter_long.dat", "wb"))
+
+        pickle.dump(master_ghost_counter_long, open("master_ghost_counter_long.dat", "wb"))
+
+        pickle.dump(kcs_ledger_change, open("kcs_ledger_change.dat", "wb"))
+        pickle.dump(kcs_btc_ledger_change, open("kcs_btc_ledger_change.dat", "wb"))
+        pickle.dump(xmr_ledger_change, open("xmr_ledger_change.dat", "wb"))
+        pickle.dump(xmr_btc_ledger_change, open("xmr_btc_ledger_change.dat", "wb"))
+        pickle.dump(zec_ledger_change, open("zec_ledger_change.dat", "wb"))
+        pickle.dump(zec_btc_ledger_change, open("zec_btc_ledger_change.dat", "wb"))
+        pickle.dump(xtz_ledger_change, open("xtz_ledger_change.dat", "wb"))
+        pickle.dump(xtz_btc_ledger_change, open("xtz_btc_ledger_change.dat", "wb"))
+        pickle.dump(ftm_ledger_change, open("ftm_ledger_change.dat", "wb"))
+        pickle.dump(ftm_btc_ledger_change, open("ftm_btc_ledger_change.dat", "wb"))
+        pickle.dump(bat_ledger_change, open("bat_ledger_change.dat", "wb"))
+        pickle.dump(ens_ledger_change, open("ens_ledger_change.dat", "wb"))
+
+        pickle.dump(master_ledger_change, open("master_ledger_change.dat", "wb"))
+
+        pickle.dump(kcs_ledger_change_long, open("kcs_ledger_change_long.dat", "wb"))
+        pickle.dump(kcs_btc_ledger_change_long, open("kcs_btc_ledger_change_long.dat", "wb"))
+        pickle.dump(xmr_ledger_change_long, open("xmr_ledger_change_long.dat", "wb"))
+        pickle.dump(xmr_btc_ledger_change_long, open("xmr_btc_ledger_change_long.dat", "wb"))
+        pickle.dump(zec_ledger_change_long, open("zec_ledger_change_long.dat", "wb"))
+        pickle.dump(zec_btc_ledger_change_long, open("zec_btc_ledger_change_long.dat", "wb"))
+        pickle.dump(xtz_ledger_change_long, open("xtz_ledger_change_long.dat", "wb"))
+        pickle.dump(xtz_btc_ledger_change_long, open("xtz_btc_ledger_change_long.dat", "wb"))
+        pickle.dump(ftm_ledger_change_long, open("ftm_ledger_change_long.dat", "wb"))
+        pickle.dump(ftm_btc_ledger_change_long, open("ftm_btc_ledger_change_long.dat", "wb"))
+        pickle.dump(bat_ledger_change_long, open("bat_ledger_change_long.dat", "wb"))
+        pickle.dump(ens_ledger_change_long, open("ens_ledger_change_long.dat", "wb"))
+
+        pickle.dump(master_ledger_change_long, open("master_ledger_change_long.dat", "wb"))
+
+        pickle.dump(supreme_counter, open("supreme_counter.dat", "wb"))
+        pickle.dump(supreme_counter_long, open("supreme_counter_long.dat", "wb"))
+        cover_list = get_order_list()  # Gets all Clientids
+        cover_info = [0 for l in range(len(cover_list))]
+        for h in range(len(cover_list)):
+            cover_info[h] = get_order_info(cover_list[h])
+
+        short_cover_list = []
+        long_cover_list = []
+        short_index = []
+        long_index = []
+        #m = [0 for g in range(len(short_cover_list))]
+        for k in range(len(cover_info)):
+            if "data" in cover_info[k] and cover_info[k]["data"]["side"] == "buy":
+                short_cover_list.append(cover_info[k])
+                short_index.append(k)
+            elif "data" in cover_info[k] and cover_info[k]["data"]["side"] == "sell":
+                long_cover_list.append(cover_info[k])
+                long_index.append(k)
+
+        #cover_ratio_short = [0 for l in range(len(short_cover_list))]
+        coin_name_short = [0 for j in range(len(short_cover_list))]
+        for l in range(len(short_cover_list)):
+            coin_name_short[l] = short_cover_list[l]["data"]["symbol"] ##Check
+            coin_amount = float(short_cover_list[l]["data"]["size"])
+            ledger_coin_place = coin_name_list.index(coin_name_short[l])
+            short_place = coin_name_list.index(coin_name_short[l])
+            date_splitter = cover_list[short_index[l]].split("b")
+            date_of_short = int(date_splitter[1])
+            index_of_short = int(date_splitter[2])
+            info_index_variable = "b" + str(date_of_short) + "b" + str(index_of_short) + 'b' + str(date_splitter[3])
+            #info_index = master_ledger_change.index(info_index_variable)
+            #info_price = get_order_info(master_ledger_change[short_place][date_of_short][info_index])
+            #first_price = info_price["data"]["price"]
+            if master_ledger_change[short_place][date_of_short][2 * index_of_short - 1] > 0.0:
+                test_variable = master_ledger_change[short_place][date_of_short][2 * index_of_short - 1]
+            else:
+                test_variable = float(cover_info[short_index[l]]["data"]["price"])
+            cover_ratio_short = prices[short_place] / test_variable
+            if (cover_ratio_short > 1.03 and cover_ratio_short <= 1.06) and cover_short_counter[short_place][date_of_short][index_of_short] == 0:
+                m = (1 / cover_ratio_short) * (1 / 2.5) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 2.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 1
+            elif (cover_ratio_short > 1.06 and cover_ratio_short <= 1.09) and cover_short_counter[short_place][date_of_short][index_of_short] <= 1:
+                m = (1 / cover_ratio_short) * (1 / 2.5) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 2.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 2
+            elif (cover_ratio_short > 1.09 and cover_ratio_short <= 1.12) and cover_short_counter[short_place][date_of_short][index_of_short] <= 3:
+                m = (1 / cover_ratio_short) * (1 / 2.5) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 2.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 4
+            elif (cover_ratio_short > 1.12 and cover_ratio_short <= 1.15) and cover_short_counter[short_place][date_of_short][index_of_short] <= 7:
+                m = (1 / cover_ratio_short) * (1 / 2.5) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(1.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 2.5 * float(coin_amount), amount_truncation_factor[ledger_coin_place]),truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][
+                date_of_short][index_of_short] + 7
+            elif (cover_ratio_short > 1.15 and cover_ratio_short <= 1.21) and cover_short_counter[short_place][date_of_short][index_of_short] <= 15:
+                m = (1 / cover_ratio_short) * (1 / 1.8) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(.8 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(.8 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 1.8 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 16
+            elif (cover_ratio_short > 1.21 and cover_ratio_short <= 1.33) and cover_short_counter[short_place][date_of_short][index_of_short] <= 31:
+                m = (1 / cover_ratio_short) * (1 / 1.4) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(.4 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(.4 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 1.4 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 32
+            elif (cover_ratio_short > 1.33 and cover_ratio_short <= 1.57) and cover_short_counter[short_place][date_of_short][index_of_short] <= 63:
+                m = (1 / cover_ratio_short) * (1 / 1.2) * 2 * .025
+                cancel_order(cover_list[short_index[l]])
+                cover_id = cover_list[short_index[l]] + "b" + str(cover_short_counter[short_place][date_of_short][index_of_short])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "sell", coin_name_short[l], truncate(.2 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                market_cover_check.append(cover_idd)
+                market_amount_check.append(truncate(.2 * float(coin_amount), amount_truncation_factor[ledger_coin_place]))
+                place_limit_order(cover_id, "buy", coin_name_short[l], truncate((1 + .43 * m) * 1.2 * float(coin_amount), amount_truncation_factor[ledger_coin_place]), truncate((1 - m) * prices[ledger_coin_place], price_truncation_factor[ledger_coin_place]))
+                cover_short_counter[short_place][date_of_short][index_of_short] = cover_short_counter[short_place][date_of_short][index_of_short] + 64
+        #cover_ratio_long = [0 for z in range(len(long_cover_list))]
+        coin_name_long = [0 for j in range(len(long_cover_list))]
+        #m_long = [0 for y in range(len(long_cover_list))]
+        from jordan_1 import cancel_order
+        for l in range(len(long_cover_list)):
+            coin_name_long[l] = long_cover_list[l]["data"]["symbol"] ##Check
+            coin_amount_long = float(long_cover_list[l]["data"]["size"])
+            ledger_coin_place_long = coin_name_list.index(coin_name_long[l])
+            long_place = coin_name_list.index(coin_name_long[l])
+            date_splitter_long = cover_list[long_index[l]].split("b")
+            date_of_long = int(date_splitter_long[1])
+            index_of_long = int(date_splitter_long[2])
+            info_index_variable_long = "b" + str(date_of_long) + "b" + str(index_of_long) + 'b' + str(date_splitter_long[3])
+            #info_index_long = master_ledger_change_long[long_place].index(info_index_variable_long)
+            #info_price_long = get_order_info(master_ledger_change_long[long_place][date_of_long][info_index_long])
+            #first_price_long = info_price_long["data"]["price"]
+            if master_ledger_change_long[long_place][date_of_long][2 * index_of_long - 1] > 0.0:
+                test_variable_long = master_ledger_change_long[long_place][date_of_long][2 * index_of_long - 1]
+            else:
+                test_variable_long = float(cover_info[long_index[l]]["data"]["price"])
+            cover_ratio_long = prices[long_place] / test_variable_long
+            if (cover_ratio_long > .94 and cover_ratio_long <= .97) and cover_long_counter[long_place][date_of_long][index_of_long] == 0:
+                m_long = (1 / cover_ratio_long) * (1 / 2) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 2 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 1
+            elif (cover_ratio_long > .91 and cover_ratio_long <= .94) and cover_long_counter[long_place][date_of_long][index_of_long] <= 1:
+                m_long = (1 / cover_ratio_long) * (1 / 2) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 2 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 2
+            elif (cover_ratio_long > .88 and cover_ratio_long <= .91) and cover_long_counter[long_place][date_of_long][index_of_long] <= 3:
+                m_long = (1 / cover_ratio_long) * (1 / 2) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(1 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 2 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 4
+            elif (cover_ratio_long > .85 and cover_ratio_long <= .88) and cover_long_counter[long_place][date_of_long][index_of_long] <= 7:
+                m_long = (1 / cover_ratio_long) * (1 / 1.8) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 1.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]),truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 8
+            elif (cover_ratio_long > .79 and cover_ratio_long <= .85) and cover_long_counter[long_place][date_of_long][index_of_long] <= 15:
+                m_long = (1 / cover_ratio_long) * (1 / 1.8) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 1.8 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 16
+            elif (cover_ratio_long > .67 and cover_ratio_long <= .79) and cover_long_counter[long_place][date_of_long][index_of_long] <= 31:
+                m_long = (1 / cover_ratio_long) * (1 / 1.4) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 1.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 32
+            elif (cover_ratio_long > .43 and cover_ratio_long <= .67) and cover_long_counter[long_place][date_of_long][index_of_long] <= 63:
+                m_long = (1 / cover_ratio_long) * (1 / 1.4) * 2 * .025
+                cancel_order(cover_list[long_index[l]])
+                cover_id = cover_list[long_index[l]] + "b" + str(cover_long_counter[long_place][date_of_long][index_of_long])
+                cover_idd = cover_id + "trty"
+                place_market_order(cover_idd, "buy", coin_name_long[l], truncate(.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                market_cover_check_long.append(cover_idd)
+                market_amount_check_long.append(truncate(.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]))
+                place_limit_order(cover_id, "sell", coin_name_long[l], truncate((1 - .43 * m_long) * 1.4 * float(coin_amount_long), amount_truncation_factor[ledger_coin_place_long]), truncate((1 + m_long) * prices[ledger_coin_place_long], price_truncation_factor[ledger_coin_place_long]))
+                cover_long_counter[long_place][date_of_long][index_of_long] = cover_long_counter[long_place][date_of_long][index_of_long] + 64
+        pickle.dump(market_amount_check, open("market_amount_check.dat", "wb"))
+        pickle.dump(market_amount_check_long, open("market_amount_check.dat", "wb"))
+        pickle.dump(market_cover_check, open("market_cover_check.dat", "wb"))
+        pickle.dump(market_cover_check_long, open("market_cover_check.dat", "wb"))
+
+        pickle.dump(kcs_cover_counter, open("kcs_cover_counter.dat", "wb"))
+        pickle.dump(kcs_btc_cover_counter, open("kcs_btc_cover_counter.dat", "wb"))
+        pickle.dump(xmr_cover_counter, open("xmr_cover_counter.dat", "wb"))
+        pickle.dump(xmr_btc_cover_counter, open("xmr_btc_cover_counter.dat", "wb"))
+        pickle.dump(zec_cover_counter, open("zec_cover_counter.dat", "wb"))
+        pickle.dump(zec_btc_cover_counter, open("zec_btc_cover_counter.dat", "wb"))
+        pickle.dump(xtz_cover_counter, open("xtz_cover_counter.dat", "wb"))
+        pickle.dump(xtz_btc_cover_counter, open("xtz_btc_cover_counter.dat", "wb"))
+        pickle.dump(ftm_cover_counter, open("ftm_cover_counter.dat", "wb"))
+        pickle.dump(ftm_btc_cover_counter, open("ftm_btc_cover_counter.dat", "wb"))
+        pickle.dump(bat_cover_counter, open("bat_cover_counter.dat", "wb"))
+        pickle.dump(ens_cover_counter, open("ens_cover_counter.dat", "wb"))
+
+        pickle.dump(cover_short_counter, open("cover_short_counter.dat", "wb"))
+
+        pickle.dump(kcs_cover_counter_long, open("kcs_cover_counter_long.dat", "wb"))
+        pickle.dump(kcs_btc_cover_counter_long, open("kcs_btc_cover_counter_long.dat", "wb"))
+        pickle.dump(xmr_cover_counter_long, open("xmr_cover_counter_long.dat", "wb"))
+        pickle.dump(xmr_btc_cover_counter_long, open("xmr_btc_cover_counter_long.dat", "wb"))
+        pickle.dump(zec_cover_counter_long, open("zec_cover_counter_long.dat", "wb"))
+        pickle.dump(zec_btc_cover_counter_long, open("zec_btc_cover_counter_long.dat", "wb"))
+        pickle.dump(xtz_cover_counter_long, open("xtz_cover_counter_long.dat", "wb"))
+        pickle.dump(xtz_btc_cover_counter_long, open("xtz_btc_cover_counter_long.dat", "wb"))
+        pickle.dump(ftm_cover_counter_long, open("ftm_cover_counter_long.dat", "wb"))
+        pickle.dump(ftm_btc_cover_counter_long, open("ftm_btc_cover_counter_long.dat", "wb"))
+        pickle.dump(bat_cover_counter_long, open("bat_cover_counter_long.dat", "wb"))
+        pickle.dump(ens_cover_counter_long, open("ens_cover_counter_long.dat", "wb"))
+
+        pickle.dump(cover_long_counter, open("cover_long_counter.dat", "wb"))
+
+
+
+
+
