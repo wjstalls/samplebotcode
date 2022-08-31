@@ -1,5 +1,7 @@
 # samplebotcode
 
+Language: Python 
+
 Kucoin Trading Bot:
 
 This code provides the (crude) outline for a more complex and customizable cryptocurrency trading bot currently in use. This bot is initiated through the direct user input of a future date into the variable labeled 'futuree' in mainbot and running the code.
