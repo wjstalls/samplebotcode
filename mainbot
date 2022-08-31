@@ -11,7 +11,7 @@ import datetime
 import time
 
 import variablecollection
-from variablecollection import convert_date_to_excel_ordinal
+from variablecollection import todays_date_function
 from variablecollection import lead_value
 
 import pickle
