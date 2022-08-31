@@ -1,0 +1,295 @@
+### Part 1 ###
+# Main Account Sandbox - ApiName: main-api-sandbox
+api_key = 
+api_secret =  
+api_passphrase = 
+
+### Part 2 ###
+
+import time
+from time import sleep
+import requests
+import base64
+import hmac
+import hashlib
+from datetime import datetime
+import json
+import pandas as pd
+
+### Part 3 ###
+
+def truncate(n, decimals=0):
+    multiplier = 10 ** decimals
+    return int(n * multiplier) / multiplier
+
+### Part 4 ###
+
+def get_current_price(symbol):
+  '''
+  For a given coin (symbol) returns the last traded price.
+  '''
+  endpoint = f'/api/v1/market/orderbook/level1?symbol={symbol}'
+  url = f'https://api.kucoin.com{endpoint}'
+  now = int(time.time() * 1000)
+  str_to_sign = str(now) + 'GET' + endpoint
+  signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+  passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+  headers = {
+          # See: https://docs.kucoin.com/#authentication
+          "KC-API-SIGN": signature,
+          # A timestamp for your request.
+          "KC-API-TIMESTAMP": str(now),
+          # The API key as a string.
+          "KC-API-KEY": api_key,
+          # The passphrase you specified when creating the API key.
+          "KC-API-PASSPHRASE": passphrase,
+          # API Version when generated
+          "KC-API-KEY-VERSION": "2"
+      }
+  r = requests.request('get', url, headers=headers)
+  # Date and Time
+  timestamp = r.json()["data"]["time"]
+  time_utc = datetime.utcfromtimestamp(timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')
+  time_now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+  time_elapsed = datetime.utcnow() - datetime.utcfromtimestamp(timestamp/1000)
+  # Sequence
+  sequence = r.json()["data"]["sequence"]
+  # Last traded price
+  price = r.json()["data"]["price"]
+  # Last traded size
+  size = r.json()["data"]["size"]
+  # Print Message
+  #print(f"Coin {symbol} was last traded at: {time_utc} UTC. (Registered {time_elapsed}s ago). The last traded price was {price}. Last traded size: {size}.")
+  return [time_utc, price, size]
+
+### Part 5
+
+def get_current_price_change(symbol):
+  '''
+  For a given coin (symbol) returns the last traded price.
+  '''
+  endpoint = f'/api/v1/market/stats?symbol={symbol}'
+  url = f'https://api.kucoin.com{endpoint}'
+  now = int(time.time() * 1000)
+  str_to_sign = str(now) + 'GET' + endpoint
+  signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+  passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+  headers = {
+          # See: https://docs.kucoin.com/#authentication
+          "KC-API-SIGN": signature,
+          # A timestamp for your request.
+          "KC-API-TIMESTAMP": str(now),
+          # The API key as a string.
+          "KC-API-KEY": api_key,
+          # The passphrase you specified when creating the API key.
+          "KC-API-PASSPHRASE": passphrase,
+          # API Version when generated
+          "KC-API-KEY-VERSION": "2"
+      }
+  r = requests.request('get', url, headers=headers)
+  # Date and Time
+  timestamp = r.json()["data"]["time"]
+  time_utc = datetime.utcfromtimestamp(timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')
+  time_now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+  time_elapsed = datetime.utcnow() - datetime.utcfromtimestamp(timestamp/1000)
+  # Sequence
+  #sequence = r.json()["data"]["sequence"]
+  # Last traded price
+  price_change = r.json()["data"]["changeRate"]
+  # Last traded size
+  #size = r.json()["data"]["size"]
+  # Print Message
+  #print(f"Coin {symbol} was last traded at: {time_utc} UTC. (Registered {time_elapsed}s ago). The last traded price was {price}. Last traded size: {size}.")
+  return float(price_change)
+
+### Part 6
+
+def place_market_order(clientOid, side, symbol, size):
+    
+    endpoint = f'/api/v1/orders'
+    url = f'https://api.kucoin.com{endpoint}'
+    now = int(time.time() * 1000)
+    data = {
+            "clientOid": clientOid,
+            "side": side,
+            "symbol": symbol,
+            "type": "market",
+            "size": size
+            }
+    data_json = json.dumps(data)
+    str_to_sign = str(now) + 'POST' + endpoint + data_json
+    signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+    passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+    headers = {
+            # See: https://docs.kucoin.com/#authentication
+            "KC-API-SIGN": signature,
+            # A timestamp for your request.
+            "KC-API-TIMESTAMP": str(now),
+            # The API key as a string.
+            "KC-API-KEY": api_key,
+            # The passphrase you specified when creating the API key.
+            "KC-API-PASSPHRASE": passphrase,
+            # API Version when generated
+            "KC-API-KEY-VERSION": "2",
+            "Content-Type": "application/json"
+        }
+    try:
+        response = requests.request('post', url, headers=headers, data=data_json)
+    except Exception as ex:
+        print(ex)
+        return None
+    return response
+
+##### Part 7 #####
+
+def place_limit_order(clientOid, side, symbol, size, price):
+    
+    endpoint = f'/api/v1/orders'
+    url = f'https://api.kucoin.com{endpoint}'
+    now = int(time.time() * 1000)
+    data = {
+            "clientOid": clientOid,
+            "side": side,
+            "symbol": symbol,
+            "type": "limit",
+            "size": size,
+            "price": price
+            }
+    data_json = json.dumps(data)
+    str_to_sign = str(now) + 'POST' + endpoint + data_json
+    signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+    passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+    headers = {
+            # See: https://docs.kucoin.com/#authentication
+            "KC-API-SIGN": signature,
+            # A timestamp for your request.
+            "KC-API-TIMESTAMP": str(now),
+            # The API key as a string.
+            "KC-API-KEY": api_key,
+            # The passphrase you specified when creating the API key.
+            "KC-API-PASSPHRASE": passphrase,
+            # API Version when generated
+            "KC-API-KEY-VERSION": "2",
+            "Content-Type": "application/json"
+        }
+    try:
+      response = requests.request('post', url, headers=headers, data=data_json)
+    except Exception as ex:
+      print(ex)
+      return None
+    return response
+
+#### Part 7 ####
+
+def get_order_list():
+  '''
+  This function will get every order ID that is still active. Not filled.
+  Return a list with all these ids.
+  '''
+ 
+  page_num = 1
+  flag = True
+  # Set a list that will keep all orders IDs from active orders.
+  order_id_list = []
+  # 2. Now we run for every page, until the data-items of the page is empty.
+  while flag == True:
+    # 2.1 Build the API Request
+    endpoint = f'/api/v1/orders?currentPage={page_num}&pageSize=50&status=active'
+    url = f'https://api.kucoin.com{endpoint}'
+    now = int(time.time() * 1000)
+    str_to_sign = str(now) + 'GET' + endpoint
+    signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+    passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+    headers = {
+                  # See: https://docs.kucoin.com/#authentication
+                  "KC-API-SIGN": signature,
+                  # A timestamp for your request.
+                  "KC-API-TIMESTAMP": str(now),
+                  # The API key as a string.
+                  "KC-API-KEY": api_key,
+                  # The passphrase you specified when creating the API key.
+                  "KC-API-PASSPHRASE": passphrase,
+                  # API Version when generated
+                  "KC-API-KEY-VERSION": "2"
+          }
+    # 2.2 Get orders for actual page_num
+    try:
+      response = requests.request('get', url, headers=headers)
+      r = response.json()
+      # 2.2.1 Now we get, for every item, the order ID and append to our order id list.
+      for item in r["data"]["items"]:
+        order_id = item["clientOid"]
+        order_id_list.append(order_id)
+    except Exception as ex:
+      print(ex)
+      return None
+    # 2.3 If the next page is empty, Set flag = false. Exits the loop.
+    # Check if this variable is True (Contains elements) or is False, is empty: [].
+    if (r["data"]["items"]):
+      flag = False
+    # 2.4 Go to next page. Contiues the loop.
+    else:
+      page_num+=1
+
+  return order_id_list
+
+
+#### Part 8 ####
+
+def get_order_info(clientOid):
+  '''
+  Given an order ID, returns its info.
+  '''
+  endpoint = f'/api/v1/order/client-order/{clientOid}'
+  url = f'https://api.kucoin.com{endpoint}'
+  now = int(time.time() * 1000)
+  str_to_sign = str(now) + 'GET' + endpoint
+  signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+  passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+  headers = {
+                # See: https://docs.kucoin.com/#authentication
+                "KC-API-SIGN": signature,
+                # A timestamp for your request.
+                "KC-API-TIMESTAMP": str(now),
+                # The API key as a string.
+                "KC-API-KEY": api_key,
+                # The passphrase you specified when creating the API key.
+                "KC-API-PASSPHRASE": passphrase,
+                # API Version when generated
+                "KC-API-KEY-VERSION": "2"
+        }
+  try:
+    response = requests.request('get', url, headers=headers)
+  except Exception as ex:
+    print(ex)
+    return None
+  return response.json()
+
+### Part 9 ###
+
+def cancel_order(clientOid):
+
+  endpoint = f'/api/v1/order/client-order/{clientOid}'
+  url = f'https://api.kucoin.com{endpoint}'
+  now = int(time.time() * 1000)
+  str_to_sign = str(now) + 'DELETE' + endpoint
+  signature = base64.b64encode(hmac.new(api_secret.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha256).digest())
+  passphrase = base64.b64encode(hmac.new(api_secret.encode('utf-8'), api_passphrase.encode('utf-8'), hashlib.sha256).digest())
+  headers = {
+                # See: https://docs.kucoin.com/#authentication
+                "KC-API-SIGN": signature,
+                # A timestamp for your request.
+                "KC-API-TIMESTAMP": str(now),
+                # The API key as a string.
+                "KC-API-KEY": api_key,
+                # The passphrase you specified when creating the API key.
+                "KC-API-PASSPHRASE": passphrase,
+                # API Version when generated
+                "KC-API-KEY-VERSION": "2"
+        }
+  try:
+    response = requests.request('delete', url, headers=headers)
+  except Exception as ex:
+    print(ex)
+    return None
+  return response.json()
