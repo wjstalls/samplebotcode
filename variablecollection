@@ -1,0 +1,24 @@
+counter = 0
+opll = float(1)
+lead_value = [opll]
+while lead_value[counter] < 100000:
+    lead_value.append(lead_value[counter] + .01)
+    counter = counter + 1
+
+lead_value = [f - .0099999999999794 for f in lead_value]
+import datetime
+from datetime import date
+
+
+def todays_date_function(d, m, y):
+
+    offset = 693594 # from excel
+    current = date(y, m, d)
+
+    datee = current.toordinal()
+    return (datee - offset)
+
+
+
+
+
